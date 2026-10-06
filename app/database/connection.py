@@ -1,0 +1,23 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
+from app.config import settings
+
+# SQLite needs an extra flag when used with FastAPI (multiple threads); Postgres doesn't.
+connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+
+engine = create_engine(settings.database_url, connect_args=connect_args, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+class Base(DeclarativeBase):
+    """All ORM models inherit from this so SQLAlchemy knows which tables exist."""
+
+
+def get_db():
+    """FastAPI dependency: gives each request its own DB session and always closes it."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
