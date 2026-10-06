@@ -1,10 +1,14 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
 import app.models  # noqa: F401  (registers tables on Base)
 from app.database.connection import Base, engine
+from app.errors import register_exception_handlers
 from app.routes import auth, incidents
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 @asynccontextmanager
@@ -21,6 +25,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+register_exception_handlers(app)
 app.include_router(auth.router)
 app.include_router(incidents.router)
 

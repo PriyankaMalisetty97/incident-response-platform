@@ -27,7 +27,7 @@ def client():
 
     app.dependency_overrides[get_db] = override_get_db
     # No `with` block on purpose: it would run the app lifespan and try to reach the real DB.
-    yield TestClient(app)
+    yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
 
