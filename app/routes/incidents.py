@@ -2,11 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.dependencies import get_current_user
+from app.models.user import User
 from app.models.incident import Severity, Status
 from app.schemas.incident import IncidentCreate, IncidentRead, IncidentUpdate
 from app.services import incident_service
 
-router = APIRouter(prefix="/incidents", tags=["incidents"])
+router = APIRouter(
+    prefix="/incidents", tags=["incidents"], dependencies=[Depends(get_current_user)]
+)
 
 
 def _get_or_404(db: Session, incident_id: int):
@@ -17,8 +21,12 @@ def _get_or_404(db: Session, incident_id: int):
 
 
 @router.post("", response_model=IncidentRead, status_code=status.HTTP_201_CREATED)
-def create_incident(data: IncidentCreate, db: Session = Depends(get_db)):
-    return incident_service.create_incident(db, data)
+def create_incident(
+    data: IncidentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return incident_service.create_incident(db, data, user_id=current_user.id)
 
 
 @router.get("", response_model=list[IncidentRead])
@@ -47,7 +55,14 @@ def update_incident(incident_id: int, data: IncidentUpdate, db: Session = Depend
 
 
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_incident(incident_id: int, db: Session = Depends(get_db)):
+def delete_incident(
+    incident_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     incident = _get_or_404(db, incident_id)
+    # Authorization ("what are you allowed to do?"): only the creator may delete.
+    if incident.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the incident creator can delete it")
     incident_service.delete_incident(db, incident)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

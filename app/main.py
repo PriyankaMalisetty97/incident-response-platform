@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 import app.models  # noqa: F401  (registers tables on Base)
 from app.database.connection import Base, engine
-from app.routes import incidents
+from app.routes import auth, incidents
 
 
 @asynccontextmanager
@@ -21,6 +21,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(auth.router)
 app.include_router(incidents.router)
 
 

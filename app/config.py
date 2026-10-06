@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """
 
     database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/incidents"
-    secret_key: str = "change-me-in-production"  # used for JWT in the auth commit
+    secret_key: str = "dev-only-secret-change-me-in-production-0123456789"  # signs JWTs; set a real one in .env
     access_token_expire_minutes: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
