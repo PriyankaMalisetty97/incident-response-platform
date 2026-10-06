@@ -2,7 +2,7 @@
 
 A backend API for reporting and managing software incidents. This is **Phase 1** of a larger project: an AI-powered incident response and root-cause assistant that will later search historical incidents and recent code changes, suggest likely root causes, and keep humans in control of important actions.
 
-**Status:** Phase 1 (core incident management backend), nearly complete.
+**Status:** Phase 1 (core incident management backend) complete.
 
 ## Features
 
@@ -12,7 +12,8 @@ A backend API for reporting and managing software incidents. This is **Phase 1**
 - **Authentication:** user registration, login with JWT access tokens, bcrypt password hashing
 - **Authorization:** all incident routes require login; only the creator can delete an incident
 - **Validation and error handling:** invalid input returns 422, missing items 404, database outage 503, and unexpected errors return a safe 500 without leaking internals
-- **Automated tests:** 26 pytest tests running against an in-memory database
+- **Database migrations:** schema changes are versioned with Alembic
+- **Automated tests:** 28 pytest tests running against an in-memory database, including a check that migrations match the models
 
 ## Architecture
 
@@ -54,6 +55,7 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
+alembic upgrade head
 uvicorn app.main:app --reload --reload-dir app
 ```
 
@@ -63,12 +65,20 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 uvicorn app.main:app --reload --reload-dir app
 ```
 
 Then open http://127.0.0.1:8000/docs.
 
-**Database.** The default is PostgreSQL (`docker compose up -d` starts one). Set `DATABASE_URL` in `.env` to match your setup. For a quick local try-out, `DATABASE_URL=sqlite:///./dev.db` also works.
+**Database.** The default is PostgreSQL (`docker compose up -d` starts one, or use a local install). Create an empty database named `incidents`, set `DATABASE_URL` in `.env` to match your setup, then run `alembic upgrade head` to create the tables. For a quick try-out, `DATABASE_URL=sqlite:///./dev.db` also works.
+
+**Changing the database schema.** Edit the models in `app/models/`, then generate and apply a migration:
+```
+alembic revision --autogenerate -m "describe the change"
+alembic upgrade head
+```
+The test suite fails if a model change is missing its migration.
 
 **Secret key.** Replace `SECRET_KEY` in `.env` with a random value:
 ```
@@ -82,7 +92,7 @@ pytest
 
 ## Roadmap
 
-1. Core incident management backend (this phase): Alembic migrations still to do
+1. Core incident management backend (done)
 2. Event-driven workflow automation (n8n)
 3. AI incident analysis (LangChain + LLM)
 4. RAG and historical incident search
